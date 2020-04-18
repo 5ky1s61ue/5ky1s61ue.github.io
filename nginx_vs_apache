@@ -48,3 +48,63 @@ Nginx	Apache
 Nginx处理静态内容，Apache处理动态内容。
 
 
+
+
+Nginx:
+简介：
+1.free+open-source+high-performance+high-stability+...
+2.WebServer+WebCacheServer+proxy+LB+...
+3.C10K problem -> http://www.kegel.com/c10k.html
+C10K manifest spurred a number of attempts to solve the problem of web server optimization to handle a large number of clients at the same time, and nginx turned out to be one of the most successful ones;
+10,000 inactive HTTP keep-alive connections take about 2.5M memory;
+4.served or proxied 25.64% busiest sites in September 2019(Yandex,VK,Hulu,CloudFlare,Airbnb,GitHub,…)
+
+架构概览：
+1.modular
+core module,event module,phase handler,protocols,variable handlers, filters, upstream and load balancers.
+2.event-driven,asynchronous,non-blocking
+event collector,dispatcher,handler.
+3.multi-process and single-threaded
+
+高效率基础：
+1.高效的算力利用(multi-processes,event-driven,asynchronous,non-blocking)
+2.高效的网络IO(kqueue, epoll, select, poll)
+3.高效的文件IO(sendfile, aio, directio)
+4.高效的内存管理(malloc, tcmalloc, jemalloc)
+5.高效的网络处理(keepalive, cache request and streaming response)
+
+流量处理方式及相关优化：
+1.process
+accept_mutex, EPOLLEXCLUSIVE, reuseport
+2.network resource
+fds
+port
+3.network traffic
+cache request
+streaming response
+keepalive
+4.kernel params
+sysctl.conf
+limits.conf
+
+OpenResty:
+简介：
+1.Free + Open-Source + High-Performance + High-Stability + …
+2.WebServer + WebCacheServer + Proxy + LB + …
+3.lua-nginx-module + LuaJIT
+4.lualib, test framework, debugging tool
+
+高效率基础：
+1.Lua and LuaJIT
+2.ngx_lua_mode
+3.asynchronous, non-blocking
+
+最佳实践:
+1.api gateway(orange, kong)
+2.火焰图(性能分析)
+
+systemtap
+openresty-systemtap-toolkit
+FlameGraph
+wrk
+
