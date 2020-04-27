@@ -1,0 +1,114 @@
+# 浅谈TLS及OpenSSL应用
+
+## TLS
+
+### 为什么需要TLS
+可能更进一步需要首先回答，为什么需要HTTPS/加密？
+通常来说就是为了防止被嗅探，MITM攻击，或者被IPS等中间媒介篡改请求or响应(广告插入等)。
+高密保性行业(比如金融证券)自不必说，随着网络用户隐私越来越受重视，HTTPS只会越来越普及。
+而TLS安全性优于SSL，TLS免费证书也非常容易获取，所以TLS在某种程度上是不可或缺的。
+
+### TLS握手
+握手，其实个互相认证双方身份的过程。(从这个角度看，现实生活中的握手也会有认证/认可的意义)
+TLS握手的过程主要干这么几件事情：
+1. 协商使用哪个TLS协议版本。
+2. 决定使用哪一套CipherSuites。
+3. 通过验证TLS证书的数字签名来对服务端进行认证。
+4. 生成TLS会话秘钥(握手完成后进行加密通信使用)
+
+而TLS握手的具体方式/步骤 和 秘钥交换算法(Key Exchange Algorithm) 紧密相连(Kx作为CipherSuites其中一部分，所以和双方支持的CipherSuites自然也很相关)。
+主流常用的两种Kx算法是RSA和DH，所以基于这两种Kx算法的TLS握手过程也 具有普遍意义。
+
+#### TLS握手-RSA:
+	1. Client hello: 客户端发起握手，携带客户端支持的TLS version、CipherSuites和随机数(client random) 但如果是会话重用的场景，这时候client hello里会携带session id，server验证后直接重用完成握手进行会话了
+	2. Server hello: 服务端响应client hello的信息，包含服务端的SSL证书、服务端选择的CipherSuites和随机数(server random)，服务端在设置了会话重用的情况下还会发送session id用于会话重用
+	3. Authentication: 客户端认证服务端的SSL证书(通过向签发证书的CA确认)
+	4. The premaster secret: 客户端发送 预主秘钥(一个或多个随机字符串构成，根据证书公钥加密生成，因此只能被服务端保存的配对私钥进行解密)
+	5. Private key used: 服务端使用私钥解密 premaster secret
+	6. Session keys created: client和server两端根据 client random、server random、premaster secret 这三个因子 和约定好的 CipherSuites中的Enc算法生成session keys，所以得到的keys是一致的，后面的加密通信都用这个keys进行加解密就OK了
+	7. Client is ready: client发送被session key加密的'finished'信息，告诉server准备会话通信了
+	8. Server is ready: server同上，告诉client准备会话通信了
+	9. Secure symmetric encryption achieved: 完成安全对称加密(握手完成)，全程采用session key进行加密通信。 后续client就可以请求它想要的资源了
+
+#### TLS握手-DH:
+
+值得一提的是，要支持DH方式握手那么服务端要指定/配置好 dh parameter
+
+	1. Client hello: 同RSA
+	2. Server hello: 同RSA, 但是又多了下面三个步骤
+		1. Server's digital signature: Server用私钥加密(client random,server random, 和server上的DH parameter）
+		2. Digital signature confirmed:
+		3. Calculate the premaster secret:
+	3. Session keys created:
+	4. Server is ready:
+	5. Server is ready:
+	6. Secure symmetric encryption achieved:
+
+
+### Forward Secrecy/Perfect Forward Secrecy
+FS/PFS(向前安全性)这个概念很早就出现了，但在[斯诺登爆料了NSA的https破解方案后](https://thehackernews.com/2016/10/nsa-crack-encryption.html)，才使得https这个方面的问题更受重视/流行起来 DH->ECDH, DHE->ECDHE
+
+### CipherSuites
+#### Au
+常见的Au算法有RSA, DSA, ECDSA三种，主流自然是RSA(2048bit以上)，而ECDSA是趋势，gmail, facebook都在往这迁移，DSA只能提供1024bit，所以不够安全。那么，使用了不同的Au算法，会导致证书内容也不一样。所以，在业务上来说，要支持某些CipherSuites，和使用的证书也是强相关的(所以我在想对于无SNI需使用default cert的场景，是不是也可以准备好三份不同的cert)。
+
+### 会话重用
+	对于7层代理，负载均衡等场景，https加解密也是对算力消耗的一个大头.为了减少对CPU的消耗，Intel提供了QAT卡把计算成本迁移到这儿来做专门的处理，提升了节点对https处理的效率，当然这是另一个话题。
+	在https算力消耗中握手中的加解密是占比非常大的，因此能做到ssl 会话重用，对效率提升是很明显而成本较低的。
+
+#### Session ID
+	Session ID是最早的tls session resumption方案，客户端如果支持session id，需要发送一个session id extension，服务器收到后如果也支持session cache，那么就会在server hello里响应后续进行resumption的session id，这样两端存储好这个session id(两端以这个session id为key，存储session key)
+
+
+#### Session Ticket
+	Session ID的带来效率提升的同时也引入了一个问题，Server端是集群的话就需要同步这个Session Cache，而且节点相关进程重载后，Session Cache一般在内存中维护，那么Session Cache也就丢失了。(当然也有解决方案，比如前面搞个四层负载做源IP一致性hash，Session Cache放到一个高效的DB里存储等)
+	同时HTTP本身是个无状态协议，Session Cache却要维护状态，有些矛盾。所以估计是参考了Cookie(个人猜测)，使用Session Ticket来做会话跟踪。
+	Session Ticket保存了session状态信息(比如握手用的CipherSuites和master secret)，而且Ticket本身也是加密的，这个加密的秘钥只有服务端知道(指定秘钥文件或者随机生成)。
+	这样即便同样的client被负载到不同的节点，只要节点都用同一份上面说的加密的秘钥(随机生成可能就有坑了)，那么就可以无需同步做到Session Resumption了。
+
+	握手过程获取新的session tikcet:
+
+	Client                                               Server
+
+     ClientHello
+    (empty SessionTicket extension)-------->
+                                                     ServerHello
+                                 (empty SessionTicket extension)
+                                                    Certificate*
+                                              ServerKeyExchange*
+                                             CertificateRequest*
+                                  <--------      ServerHelloDone
+     Certificate*
+     ClientKeyExchange
+     CertificateVerify*
+     [ChangeCipherSpec]
+     Finished                     -------->
+                                                NewSessionTicket
+                                              [ChangeCipherSpec]
+                                  <--------             Finished
+     Application Data             <------->     Application Data
+
+
+     使用ticket重用会话，ticket无效等握手场景可参考[RFC相关文档](https://tools.ietf.org/html/rfc5077)(当网上各种说法不一致时，看官方文档还是最靠谱)
+
+#### ID vs Ticket
+	
+
+### Mixed Content问题
+
+### TLS1.3及HTTP2.0
+#### 0 RTT
+### 证书及证书链
+
+### keyless
+
+### SNI的一些业务场景
+
+## OpenSSL
+
+### 支持全量CipherSuites的OpenSSL
+
+### 如何使用好OpenSSL命令行
+
+## 参考资料
+	1. https://www.cloudflare.com/learning/ssl
