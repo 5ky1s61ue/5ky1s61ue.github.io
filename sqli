@@ -73,3 +73,5 @@ sqlmap & burpsuit
 	13. a=foo'='foo
 	14. a=1'%00or%001;#
 	
+主要参考:
+https://ctf-wiki.github.io/ctf-wiki/web/sqli-zh/#_3
