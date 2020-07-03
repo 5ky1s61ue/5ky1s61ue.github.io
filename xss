@@ -65,3 +65,6 @@
 	2.关键字提取:标签(<img> <a> <input>等)、事件操作器(onfocus onclick onerror等)、属性值(src, herf等)
 	3.对输入进行html编码(< > ' " & ; :等)
 	4.响应中指明编码类型
+
+
+https://xz.aliyun.com/t/5950
