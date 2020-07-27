@@ -41,6 +41,7 @@
 				无须过多优化，本身已具备高效的匹配效率。
 
 		3.Glushkov NFA & Thompson NFA
+			Glushkov算法构造NFA能解决Thompson算法引入的空状态及空转移问题，具体细节挺复杂，还需要重新看看编译原理中的相关内容和Glushkov算法论文`https://cs.nyu.edu/~mohri/pub/glush.pdf`
 
 	3.Multi-String Matching & Multi-Pattern Matching
 		1.Multi-String Matching:
