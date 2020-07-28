@@ -2,8 +2,7 @@
 layout: default
 ---
 
-## Welcome to another page
-
-_yay_
+## About Me
+	Currently nothing here.
 
 [back](./)

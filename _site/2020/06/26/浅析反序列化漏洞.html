@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>浅析反序列化漏洞 | 5ky1s61ue’s Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="浅析反序列化漏洞" />
+<meta name="author" content="oy" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="铺垫知识" />
+<meta property="og:description" content="铺垫知识" />
+<link rel="canonical" href="http://localhost:4000/2020/06/26/%E6%B5%85%E6%9E%90%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html" />
+<meta property="og:url" content="http://localhost:4000/2020/06/26/%E6%B5%85%E6%9E%90%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html" />
+<meta property="og:site_name" content="5ky1s61ue’s Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-06-26T00:00:00+08:00" />
+<script type="application/ld+json">
+{"headline":"浅析反序列化漏洞","dateModified":"2020-06-26T00:00:00+08:00","datePublished":"2020-06-26T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2020/06/26/%E6%B5%85%E6%9E%90%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html"},"author":{"@type":"Person","name":"oy"},"description":"铺垫知识","@type":"BlogPosting","url":"http://localhost:4000/2020/06/26/%E6%B5%85%E6%9E%90%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+<nav>
+  
+    <a href="/" >
+      Home
+    </a>
+  
+    <a href="/blog.html" >
+      Blog
+    </a>
+  
+    <a href="/another-page.html" >
+      About
+    </a>
+  
+</nav>
+
+    <header>
+      <div class="container">
+        <a id="a-title" href="/">
+          <h1>5ky1s61ue's Blog</h1>
+        </a>
+        <h2>Try to be a hacker, hack in mylife and take control of it.</h2>
+
+        <section id="downloads">
+          
+          <a href="https://github.com/5ky1s61ue" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>26 June 2020</small>
+<h1>浅析反序列化漏洞</h1>
+
+<p class="view">by oy</p>
+
+<h2 id="铺垫知识">铺垫知识</h2>
+
+<blockquote>
+
+  <p>序列化</p>
+
+  <p>让<code class="highlighter-rouge">对象</code>脱离运行环境的一种手段，实现数据通信和对象持久化</p>
+
+  <p>反序列化</p>
+
+  <p><code class="highlighter-rouge">字节序列</code>恢复为<code class="highlighter-rouge">对象</code></p>
+
+  <p>Java反序列化</p>
+
+  <ol>
+    <li>
+      <p>只有实现了Serializable接口 的类的对象 才可以被序列化；</p>
+    </li>
+    <li>
+      <p>所有属性必须是可序列化的(transient修饰属性除外，不参与序列化过程)</p>
+    </li>
+  </ol>
+</blockquote>
+
+<blockquote>
+  <p>而实现Serializable接口可以重写<code class="highlighter-rouge">readObject()</code>方法，其作用是从一个源输入流读取字节序列并执行反序列化动作，最后返回反序列化对象。</p>
+
+  <p>由此，可以<code class="highlighter-rouge">定制</code>反序列化的一些行为 -&gt; 攻击者可以通过构造恶意输入(反序列化的字节流数据)，让反序列化产生非预期的对象，从而执行任意代码。</p>
+
+  <p>一些CVE漏洞也就是利用不同类对readObject实现时引入的缺陷</p>
+
+  <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>                 jndi
+hacker -&gt; server ----&gt; rmi -&gt; local http service
+	  execute payload  &lt;-----------
+	   			        bad class
+</code></pre></div>  </div>
+</blockquote>
+
+<h2 id="java序列化数据结构">Java序列化数据结构</h2>
+<blockquote>
+
+  <p>JAVA序列化数据可通过magic number识别，数据包开头为 <code class="highlighter-rouge">0x AC ED</code>，接下来两个字节表明版本号，后续字节包含类名、成员变量的类型和个数等信息。</p>
+
+  <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>STREAM_MAGIC (2 bytes) 0xACED 
+STREAM_VERSION (2 bytes) 0x0005
+    TC_OBJECT (1 byte) 0x73
+        TC_CLASSDESC (1 byte) 0x72
+</code></pre></div>  </div>
+</blockquote>
+
+<h2 id="反序列化过程">反序列化过程</h2>
+<blockquote>
+
+  <ol>
+    <li>
+      <p>ObejectInuputStream的readObject方法，用来将字节流数据反序列化为对象。</p>
+    </li>
+    <li>
+      <p>如果流中的对象是 class，则它的ObjectStreamClass描述符会被读取，并返回相应的class对象，ObjectStreamClass包含类的名称及serialVersionUID。</p>
+    </li>
+    <li>
+      <p>如果 类描述符 是动态代理类，调用resolveProxyClass方法来获取本地类。</p>
+    </li>
+    <li>
+      <p>如果 类描述符 不是动态代理类，则调用resoveClass方法来获取本地类。</p>
+    </li>
+    <li>
+      <p>如果无法解析该类，则抛出ClassNotFoundException异常。
+如果反序列化对象不是String,Arrary,Enum类型，ObjectStreamClass包含的类会在本地被检索。</p>
+    </li>
+    <li>
+      <p>如果这个本地类没有实现java.io.Serializable或externalizable接口，则抛出InvalidClassException异常，因为只有实现这些接口的类对象才能被序列化。</p>
+    </li>
+  </ol>
+</blockquote>
+
+<h2 id="反序列化化漏洞分类">反序列化化漏洞分类</h2>
+<blockquote>
+
+  <ol>
+    <li>
+      <p>开发失误</p>
+    </li>
+    <li>
+      <p>基础库隐藏的反序列化漏洞</p>
+    </li>
+    <li>
+      <p>POP(Property-Oriented Programing) Gadgets</p>
+    </li>
+  </ol>
+</blockquote>
+
+<h2 id="一些常见java反序列化漏洞">一些常见Java反序列化漏洞</h2>
+<blockquote>
+
+  <p>利用Java反射机制：
+java Apache-CommonsCollections3.1反序列化RCE漏洞</p>
+
+  <p>利用RMI机制：
+CVE-2018-1297</p>
+
+  <p>JMX框架利用：
+CVE-2017-12149</p>
+
+  <p>fastjson反序列化漏洞</p>
+</blockquote>
+
+<h2 id="相关工具">相关工具</h2>
+<blockquote>
+
+  <p>ysoserial</p>
+
+  <p>vulhub.org</p>
+</blockquote>
+
+<h2 id="主要参考">主要参考</h2>
+<ol>
+  <li>https://paper.seebug.org/312/</li>
+  <li>https://cryin.github.io/blog/secure-development-java-deserialization-vulnerability/</li>
+  <li>https://xz.aliyun.com/t/6787</li>
+  <li>https://xz.aliyun.com/t/2041</li>
+</ol>
+
+
+
+  <small>tags: <em>java_serialization xmldecoder</em></small>
+
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

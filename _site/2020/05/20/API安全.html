@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Api安全 | 5ky1s61ue’s Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Api安全" />
+<meta name="author" content="oy" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="WHY" />
+<meta property="og:description" content="WHY" />
+<link rel="canonical" href="http://localhost:4000/2020/05/20/API%E5%AE%89%E5%85%A8.html" />
+<meta property="og:url" content="http://localhost:4000/2020/05/20/API%E5%AE%89%E5%85%A8.html" />
+<meta property="og:site_name" content="5ky1s61ue’s Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-05-20T00:00:00+08:00" />
+<script type="application/ld+json">
+{"headline":"Api安全","dateModified":"2020-05-20T00:00:00+08:00","datePublished":"2020-05-20T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2020/05/20/API%E5%AE%89%E5%85%A8.html"},"author":{"@type":"Person","name":"oy"},"description":"WHY","@type":"BlogPosting","url":"http://localhost:4000/2020/05/20/API%E5%AE%89%E5%85%A8.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+<nav>
+  
+    <a href="/" >
+      Home
+    </a>
+  
+    <a href="/blog.html" >
+      Blog
+    </a>
+  
+    <a href="/another-page.html" >
+      About
+    </a>
+  
+</nav>
+
+    <header>
+      <div class="container">
+        <a id="a-title" href="/">
+          <h1>5ky1s61ue's Blog</h1>
+        </a>
+        <h2>Try to be a hacker, hack in mylife and take control of it.</h2>
+
+        <section id="downloads">
+          
+          <a href="https://github.com/5ky1s61ue" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>20 May 2020</small>
+<h1>Api安全</h1>
+
+<p class="view">by oy</p>
+
+<h2 id="why">WHY</h2>
+
+<p>为什么需要关注API安全？<br />
+那可能需要首先明确</p>
+<blockquote>
+
+  <ol>
+    <li>
+      <p>什么是API</p>
+
+      <p>顾名思义，为应用提供的程序接口。技术角度上讲，也可以是认为是为应用创建用户接口的标准。</p>
+
+      <p>总的来说，API为<code class="highlighter-rouge">集成</code>而生，由一组用于<code class="highlighter-rouge">集成应用软件和服务</code>的工具和协议组合而成，具备高度的可拓展性和可用性，能够把IT世界的各种数据、应用和设备联动起来，并让它们更好地相互通信与协同工作。</p>
+    </li>
+    <li>
+      <p>有哪些API？</p>
+
+      <p>在使用场景上，API难以归类，兼具了访问控制，数据转换和传输的作用，在幕后协调各种不同的功能来为用户提供统一的应用程序服务。</p>
+
+      <p>从格式与技术架构角度区分API类别</p>
+
+      <ol>
+        <li>
+          <p>REST API</p>
+
+          <p>REpresentational State Transfer.</p>
+
+          <p>使用HTTP来实现程序间的交互，因此是无状态的，响应可缓存。</p>
+
+          <p>REST更适合与资源相关的操作，CRUD</p>
+
+          <p>RPC更适合与行为相关的操作，命令(注册、登录等)</p>
+
+          <p>补齐了RPC(SOAP、XML-RPC)的短板(开发部署成本高)。</p>
+
+          <p>轻量、易于创建和部署，多用于IoT场景。</p>
+
+          <p>OpenAPI 2.0(Swagger)定义了相关格式与标准。</p>
+        </li>
+        <li>
+          <p>Real-time API</p>
+
+          <p>对于金融、即时通讯、IoT等时效敏感的场景，需要实时的API交互模型。RPC，gRPC</p>
+        </li>
+        <li>
+          <p>Others</p>
+
+          <p>一些本地嵌入的API如SDK等。</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API易受攻击的原因</p>
+
+      <ol>
+        <li>
+          <p>权限过大</p>
+
+          <p>因为不是直接对<code class="highlighter-rouge">人</code>呈现，所以在应用程序的环境里常容易赋予API访问任意数据的权限。对于<code class="highlighter-rouge">终端用户</code>的<code class="highlighter-rouge">权限校验</code>，往往是在<code class="highlighter-rouge">终端用户</code>原始的一次/几次请求完成,然后，这些权限就会传递给API（通过Token等），而后续的API调用，并不受相关限制，攻击者只需要绕过身份验证/盗用身份，就能掌握这个API所拥有的权限了。</p>
+        </li>
+        <li>
+          <p>可见性低</p>
+
+          <p>因为API调用都是在幕后完成的(相对于直观的用户界面而言)，一般都是危害发生的时候，才会让人注意到。而且一般API调用关系繁杂，对于异常的API调用，即时是开发团队也难以即时发现，而对于安全团队而言，由于不熟悉API调用的架构详情与业务细节，无法知晓异常API调用产生的影响，也是API可见性低的体现。</p>
+        </li>
+        <li>
+          <p>API的错误配置</p>
+
+          <p>一些配置错误的API和一些并不被开发团队知晓但切实存在的API，导致更容易通过这些API绕过权限校验。</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>什么是API安全？</p>
+
+      <p>API安全就是要确保API的<code class="highlighter-rouge">机密性</code>和<code class="highlighter-rouge">完整性</code></p>
+    </li>
+    <li>
+      <p>为什么需要关注API安全？</p>
+
+      <p>避免敏感数据泄露，API的广泛使用已经是一种趋势，特别是<code class="highlighter-rouge">微服务架构</code>和<code class="highlighter-rouge">server-less架构</code>的广泛采用与推广，这个趋势就更加明显，所以与日俱增的API数量与流量，引来了同步增加的API安全威胁。</p>
+    </li>
+  </ol>
+
+</blockquote>
+
+<h2 id="what">WHAT</h2>
+<blockquote>
+
+  <p>为了实现<code class="highlighter-rouge">API安全</code>的目标，我们需要具备什么条件，满足什么场景？进一步，我们需要提供一种什么样的产品、服务或能力来实现这个目标</p>
+
+  <ol>
+    <li>
+      <p>和API安全相关的产品</p>
+
+      <p>API GATEWAY</p>
+
+      <p>权限控制，API合法性校验，认证，授权，集成OAuth,JWT,OenID Connect,SAML服务</p>
+    </li>
+    <li>
+      <p>API攻击受攻击面：</p>
+
+      <ol>
+        <li>
+          <p>集成了大量第三方API的平台：</p>
+        </li>
+        <li>
+          <p>移动应用程序：
+ 通过反编译 或 逆向移动APP，寻找漏洞或机会，例如硬编码和弱访问控制</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API攻击的形式：</p>
+
+      <ol>
+        <li>
+          <p>针对API身份/权限认证的 访问攻击和注入攻击。</p>
+        </li>
+        <li>
+          <p>越权以 获取敏感信息，身份盗用等。</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API攻击的手段：</p>
+
+      <ol>
+        <li>
+          <p>API参数篡改：
+ 通过篡改API的入参，来进行攻击尝试，包括逆向这个API，引发DOS攻击，或者脱裤等。</p>
+        </li>
+        <li>
+          <p>BOT攻击和DDOS攻击
+ 通过自动化工具，实施对API的爬取或者DDOS攻击，会对业务的计算等资源造成损耗。</p>
+        </li>
+        <li>
+          <p>会话盗用/篡改：
+ 一般通过盗用/篡改cookie来实现会话的盗用/篡改。</p>
+        </li>
+        <li>
+          <p>中间人攻击：
+ 如果API通过明文传输（比如HTTP），那么可能会泄露不少敏感信息，也容易遭受中间人攻击。</p>
+        </li>
+        <li>
+          <p>注入攻击：
+ 通用的WEB攻击手法，如SQLI，CMDI等</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API防护与WEB应用防护的异同</p>
+
+      <p>主要对WAF(web application firewall)而言，如何觉察和定位到这些细微差异。</p>
+
+      <p>WAF-&gt;WAFPP</p>
+    </li>
+  </ol>
+</blockquote>
+
+<h2 id="how">HOW</h2>
+<blockquote>
+
+  <p>我们怎么实现/达成这么一种产品、服务或能力</p>
+
+  <ol>
+    <li>
+      <p>梳理清楚业务具有的API</p>
+
+      <ol>
+        <li>
+          <p>通过外部扫描，从黑客视角出发</p>
+        </li>
+        <li>
+          <p>开发、运维团队主动梳理，特别是风险API</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API认证</p>
+
+      <ol>
+        <li>
+          <p>用好认证框架 OAuth2.0-&gt;REST</p>
+        </li>
+        <li>
+          <p>使用令牌（token）</p>
+        </li>
+        <li>
+          <p>安全存储<code class="highlighter-rouge">认证凭据</code></p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API授权</p>
+
+      <ol>
+        <li>
+          <p>遵循<code class="highlighter-rouge">最小权限</code>原则，根据API角色做好访问控制。(例如REST中限制HTTP方法，比如DELETE)</p>
+        </li>
+        <li>
+          <p>过滤与验证输入后，再把输入传递给应用程序。(比如防御注入攻击)</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>API监控</p>
+
+      <ol>
+        <li>通过API监控，分析统计API调用的结果与行为序列，来抵御暴力破解和慢速攻击，最好同时监控API所服务的相关资源来确保完整性和机密性。</li>
+      </ol>
+    </li>
+    <li>
+      <p>API加密和签名</p>
+
+      <ol>
+        <li>
+          <p>使用TLS实现加密</p>
+        </li>
+        <li>
+          <p>使用签名
+ 预防中间人攻击。</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>使用API安全服务或工具识别漏洞与API薄弱之处</p>
+
+      <ol>
+        <li>API GATEWAY</li>
+      </ol>
+    </li>
+    <li>
+      <p>使用配额和限流</p>
+
+      <ol>
+        <li>
+          <p>频率限制防止DOS</p>
+        </li>
+        <li>
+          <p>追踪使用记录</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>测试业务API</p>
+
+      <ol>
+        <li>Scanner</li>
+      </ol>
+    </li>
+    <li>
+      <p>API管理</p>
+
+      <ol>
+        <li>
+          <p>API密钥</p>
+        </li>
+        <li>
+          <p>基础身份验证(id/username and key/password)</p>
+        </li>
+        <li>
+          <p>OpenID Connect(OIDC)</p>
+        </li>
+      </ol>
+    </li>
+  </ol>
+
+  <p>作为WAF或者WAAP需要具备何种能力？</p>
+
+  <ol>
+    <li>
+      <p>API参数的分析能力；能根据历史流量，分析出不同API的参数结构（参数类型，key值限制，content-type，顺序，数量等等），对于异常的API参数，能及时发现、告警与拦截</p>
+    </li>
+    <li>
+      <p>具备API限速能力和IP拉黑能力</p>
+    </li>
+    <li>
+      <p>具备会话(Cookie)防篡改的能力：通过对Cookie进行签名(可以加入sip，host等作为部分hash因子)等手段进行校验审查，以达到防篡改的效果</p>
+    </li>
+    <li>
+      <p>强制API加密传输</p>
+    </li>
+    <li>
+      <p>注入攻击防护</p>
+    </li>
+    <li>
+      <p>API用户追踪：对于特定API用户行为进行建模分析，发现异常行为。这里涉及到如何标识API用户(客户端)，在IoT API调用的场景一般有双向认证，那么可以根据客户端证书来标识。</p>
+    </li>
+  </ol>
+</blockquote>
+
+<p>##主要参考</p>
+<ol>
+  <li>https://www.f5.com/labs/articles/threat-intelligence/application-protection-report-2019-episode-5-api-breaches-and-the-visibility-problem</li>
+  <li>https://www.redhat.com/zh/topics/security/api-security</li>
+  <li>https://www.imperva.com/blog/six-ways-to-secure-apis/</li>
+</ol>
+
+
+
+  <small>tags: <em>REST gRPC Swagger JSON XML WAAP</em></small>
+
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

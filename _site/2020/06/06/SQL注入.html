@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Sql注入 | 5ky1s61ue’s Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Sql注入" />
+<meta name="author" content="oy" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="如何开始" />
+<meta property="og:description" content="如何开始" />
+<link rel="canonical" href="http://localhost:4000/2020/06/06/SQL%E6%B3%A8%E5%85%A5.html" />
+<meta property="og:url" content="http://localhost:4000/2020/06/06/SQL%E6%B3%A8%E5%85%A5.html" />
+<meta property="og:site_name" content="5ky1s61ue’s Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-06-06T00:00:00+08:00" />
+<script type="application/ld+json">
+{"headline":"Sql注入","dateModified":"2020-06-06T00:00:00+08:00","datePublished":"2020-06-06T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2020/06/06/SQL%E6%B3%A8%E5%85%A5.html"},"author":{"@type":"Person","name":"oy"},"description":"如何开始","@type":"BlogPosting","url":"http://localhost:4000/2020/06/06/SQL%E6%B3%A8%E5%85%A5.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+<nav>
+  
+    <a href="/" >
+      Home
+    </a>
+  
+    <a href="/blog.html" >
+      Blog
+    </a>
+  
+    <a href="/another-page.html" >
+      About
+    </a>
+  
+</nav>
+
+    <header>
+      <div class="container">
+        <a id="a-title" href="/">
+          <h1>5ky1s61ue's Blog</h1>
+        </a>
+        <h2>Try to be a hacker, hack in mylife and take control of it.</h2>
+
+        <section id="downloads">
+          
+          <a href="https://github.com/5ky1s61ue" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>6 June 2020</small>
+<h1>Sql注入</h1>
+
+<p class="view">by oy</p>
+
+<h2 id="如何开始">如何开始</h2>
+
+<blockquote>
+
+  <h3 id="明确入口">明确入口</h3>
+
+  <p>一般都在接收用户输入的地方，常见的登录注册接口，评论提交接口等。位置一般以参数url params Post params为主，也有headers(host, ua, referer等)，cookie等。</p>
+
+  <h3 id="查找注入点">查找注入点</h3>
+
+  <ol>
+    <li>
+      <p>输入携带引号，查看是否异常</p>
+    </li>
+    <li>
+      <p>逻辑操作符and or 是否生效</p>
+    </li>
+    <li>
+      <p>数字运算符是否生效+ -</p>
+    </li>
+    <li>
+      <p>字符串拼接是否生效’f’ ‘o’ ‘o’</p>
+    </li>
+    <li>
+      <p>内置函数是否生效</p>
+    </li>
+    <li>
+      <p>查询结构是否生效 union select, order by</p>
+    </li>
+  </ol>
+
+  <h3 id="确定数据库类型">确定数据库类型</h3>
+  <p>根据不同数据库的一些特性，如特殊操作符，特殊注释符，特有函数等来确定目标数据库类型</p>
+
+  <h3 id="探测">探测</h3>
+
+  <ol>
+    <li>
+      <p>union select</p>
+
+      <p>一般是探测数据库信息，比如database(), user()等确定基本信息，再获取目标的数据库名，表名等。information_schema 关键的数据库，存储了许多基本配置及相关信息，
+<code class="highlighter-rouge">UNION SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_name = 'tablename</code></p>
+    </li>
+    <li>
+      <p>盲注</p>
+
+      <p>在注入点无回显的场景，根据响应的正确执行与否来判断注入是否成功，即条件式响应，盲注。</p>
+
+      <p>一般分为两类</p>
+
+      <ol>
+        <li>
+          <p>布尔盲注</p>
+
+          <p>构造有效与无效的SQL语句，观察响应是否有异同，来判断是否可进行盲注。
+ <code class="highlighter-rouge">AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables &gt; 'A'</code></p>
+        </li>
+        <li>
+          <p>时间盲注</p>
+
+          <p>根据语句执行时间(server 响应时间)判断语句是否执行成功,一般用sleep(), benchmark()</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>报错</p>
+
+      <p>根据报错信息判断是否存在潜在的注入点</p>
+    </li>
+    <li>
+      <p>爆破</p>
+
+      <p>上述步骤明确注入点和基本信息后，采用爆破的方法获取完整的数据库名，表名等。</p>
+
+      <p>一般用hex(),unhex(),ascii(),char(),concat()等函数</p>
+    </li>
+  </ol>
+
+  <h3 id="绕过">绕过</h3>
+
+  <ol>
+    <li>
+      <p>引号绕过</p>
+
+      <ol>
+        <li>
+          <p>0x61646D696E;</p>
+        </li>
+        <li>
+          <p>char(), ascii(),hex(),unhex()</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>字符黑名单绕过</p>
+
+      <ol>
+        <li>
+          <p>引号空格分割’a’ ‘d’ ‘m’ ‘I’ ‘n’</p>
+        </li>
+        <li>
+          <p>concat() concat_ws() group_concat()</p>
+        </li>
+        <li>
+          <p>行间注释(语句截断)</p>
+        </li>
+        <li>
+          <p>行内注释(空格替换)</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>字符编码绕过</p>
+
+      <ol>
+        <li>
+          <p>大小写</p>
+        </li>
+        <li>
+          <p>hex</p>
+        </li>
+        <li>
+          <p>urlencode</p>
+        </li>
+        <li>
+          <p>base64</p>
+        </li>
+        <li>
+          <p>宽字节</p>
+        </li>
+        <li>
+          <p>组合编码</p>
+        </li>
+        <li>
+          <p>unicode及特殊unicode字符</p>
+        </li>
+      </ol>
+    </li>
+    <li>
+      <p>使用条件语句</p>
+
+      <p>CASE, IF(), IFNULL(), NULLIF()</p>
+    </li>
+    <li>
+      <p>带外通道(DNSLOG Injection)
+ 当无回显时，通过DNSLOG注入获取相关执行成功与否等信息。配合load_file使用</p>
+    </li>
+  </ol>
+</blockquote>
+
+<h3 id="防御">防御</h3>
+<blockquote>
+
+  <ol>
+    <li>
+      <p>输入过滤</p>
+    </li>
+    <li>
+      <p>参数化查询</p>
+    </li>
+    <li>
+      <p>语法解析</p>
+    </li>
+  </ol>
+
+  <h3 id="工具">工具</h3>
+  <p>sqlmap、burpsuit</p>
+</blockquote>
+
+<h3 id="示例">示例</h3>
+<blockquote>
+
+  <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. 100.94.13.181?a=1' || '1'&amp;'1
+2. 100.94.13.181?a=1' or '1'&amp;'1
+3.  select *,NULL from information_schema.USER_PRIVILEGES as U where PRIVILEGE_TYPE='1' or 0x73656c656374
+4. 100.94.13.181?a=1' or 0x61646D696E'
+5. 100.94.13.181?a=1' or 0x61646D696E#
+6. a=1' or repeat('',1) or repeat('1', 1);#
+7. a=1' or 2+1;#
+8. a=1' or!!2+1;#
+9. a=1' or~~2+1;#
+10. a=1' or!!0x21;#
+11. a=1' or~~0x21;#
+12. a='='
+13. a=foo'='foo
+14. a=1'%00or%001;#
+15. a=1'^1=0#
+</code></pre></div>  </div>
+</blockquote>
+
+<h2 id="主要参考">主要参考</h2>
+<ol>
+  <li>https://ctf-wiki.github.io/ctf-wiki/web/sqli-zh/#_3</li>
+</ol>
+
+
+
+  <small>tags: <em>sqli 盲注</em></small>
+
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

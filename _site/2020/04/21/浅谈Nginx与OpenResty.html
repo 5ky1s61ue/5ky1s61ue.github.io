@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>浅谈nginx与openresty | 5ky1s61ue’s Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="浅谈nginx与openresty" />
+<meta name="author" content="oy" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Nginx" />
+<meta property="og:description" content="Nginx" />
+<link rel="canonical" href="http://localhost:4000/2020/04/21/%E6%B5%85%E8%B0%88Nginx%E4%B8%8EOpenResty.html" />
+<meta property="og:url" content="http://localhost:4000/2020/04/21/%E6%B5%85%E8%B0%88Nginx%E4%B8%8EOpenResty.html" />
+<meta property="og:site_name" content="5ky1s61ue’s Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-21T00:00:00+08:00" />
+<script type="application/ld+json">
+{"headline":"浅谈nginx与openresty","dateModified":"2020-04-21T00:00:00+08:00","datePublished":"2020-04-21T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2020/04/21/%E6%B5%85%E8%B0%88Nginx%E4%B8%8EOpenResty.html"},"author":{"@type":"Person","name":"oy"},"description":"Nginx","@type":"BlogPosting","url":"http://localhost:4000/2020/04/21/%E6%B5%85%E8%B0%88Nginx%E4%B8%8EOpenResty.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+<nav>
+  
+    <a href="/" >
+      Home
+    </a>
+  
+    <a href="/blog.html" >
+      Blog
+    </a>
+  
+    <a href="/another-page.html" >
+      About
+    </a>
+  
+</nav>
+
+    <header>
+      <div class="container">
+        <a id="a-title" href="/">
+          <h1>5ky1s61ue's Blog</h1>
+        </a>
+        <h2>Try to be a hacker, hack in mylife and take control of it.</h2>
+
+        <section id="downloads">
+          
+          <a href="https://github.com/5ky1s61ue" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>21 April 2020</small>
+<h1>浅谈nginx与openresty</h1>
+
+<p class="view">by oy</p>
+
+<h2 id="nginx">Nginx</h2>
+
+<h3 id="简介">简介</h3>
+
+<p>Nginx是一款 <code class="highlighter-rouge">免费</code>、<code class="highlighter-rouge">高性能</code>、<code class="highlighter-rouge">高可靠</code> 的 <code class="highlighter-rouge">开源</code> 软件，
+可作为 <code class="highlighter-rouge">WebServer</code>、 <code class="highlighter-rouge">LB</code>、 <code class="highlighter-rouge">WebCacheServer</code> 等软件设备满足互联网业务需求。</p>
+
+<p>伴随着<a href="http://www.kegel.com/c10k.html">C10K</a>问题产生了许多优秀开源软件，Nginx算是其中的出色玩家之一。</p>
+
+<p>根据2019年9月的统计数据，Nginx已经服务/代理了全球25.64%的最繁忙站点，例如(Yandex,VK,Hulu,CloudFlare,Airbnb,GitHub,…)。</p>
+
+<h3 id="基础架构">基础架构</h3>
+
+<ol>
+  <li>
+    <p>模块化</p>
+
+    <p>1). 高度抽象的模块接口</p>
+
+    <p>2). 核心模块接口的简单化</p>
+
+    <p>3). 多层次、多类别的模块设计</p>
+  </li>
+  <li>
+    <p>多进程(Master-Slave多进程模型)</p>
+
+    <p>1). 充分利用多核并发处理能力</p>
+
+    <p>2). 通过IPC实现负载均衡</p>
+
+    <p>3). Master进程负责对Worker进程的管理、监控提升服务的可靠性</p>
+  </li>
+  <li>
+    <p>事件驱动与异步非阻塞</p>
+
+    <p>1). EPOLL的使用(内核事件驱动模块复用，内部基于EPOLL实现的高效timer)</p>
+
+    <p>2). 请求的多阶段划分与处理(实现异步非阻塞的基础，阻塞耗时操作的分解)</p>
+  </li>
+</ol>
+
+<h3 id="高效率基础">高效率基础</h3>
+
+<ol>
+  <li>
+    <p>高效算力利用(multi-processes,event-driven,asynchronous,non-blocking)</p>
+  </li>
+  <li>
+    <p>高效的网络IO(kqueue, epoll, select, poll)</p>
+  </li>
+  <li>
+    <p>高效的文件IO(sendfile, aio, directio)</p>
+  </li>
+  <li>
+    <p>高效的内存管理(malloc, tcmalloc, jemalloc)</p>
+  </li>
+  <li>
+    <p>高效的网络处理(keepalive, cache request and streaming response)</p>
+  </li>
+  <li>
+    <p>高效的数据结构(内部实现了基础的数据结构如双向链表，动态数组，单向链表，rbtree, hash_table等)</p>
+  </li>
+</ol>
+
+<h3 id="流量处理方式及优化思路">流量处理方式及优化思路</h3>
+<ol>
+  <li>process
+    <ul>
+      <li>accept_mutex</li>
+      <li>EPOLLEXCLUSIVE</li>
+      <li>reuseport</li>
+    </ul>
+  </li>
+  <li>network resource
+    <ul>
+      <li>fds</li>
+      <li>port</li>
+    </ul>
+  </li>
+  <li>network traffic
+    <ul>
+      <li>cache request</li>
+      <li>streaming response</li>
+      <li>keepalive</li>
+    </ul>
+  </li>
+  <li>kernel params
+    <ul>
+      <li>sysctl.conf</li>
+      <li>limits.conf</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="nginx-vs-apache">Nginx VS Apache</h3>
+
+<h4 id="一网络io架构">一、网络IO架构</h4>
+
+<p><strong>Nginx</strong></p>
+<ol>
+  <li>多进程</li>
+  <li>事件驱动</li>
+  <li>基于多请求阶段划分的异步非阻塞处理方式</li>
+</ol>
+
+<p><strong>Apache</strong></p>
+<ol>
+  <li>prefork:新连接对应新进程</li>
+  <li>worker:新连接对应新线程，一个进程持有多个线程</li>
+  <li>event:同上新连接对应新线程，但针对keepalive做了优化，特定线程用于保持keepalive连接，活跃请求通过其他线程处理</li>
+</ol>
+
+<h4 id="二静态与动态-内容处理">二、静态与动态 内容处理</h4>
+
+<p><strong>Nginx</strong></p>
+<ol>
+  <li>天然仅支持静态内容处理</li>
+  <li>动态内容处理须调用外部模块等，并须等待返回结果</li>
+  <li>连接nginx与动态内容处理模块，须通过 http,FastCGI,SCGI,uWSGI,memcache等协议</li>
+  <li>由此nginx可以更专注于静态内容处理，并达到可观的高效率</li>
+</ol>
+
+<p><strong>Apache</strong></p>
+<ol>
+  <li>基于文件的模式支持静态内容处理</li>
+  <li>在工作实例中嵌入语言解释/处理器 来处理动态内容</li>
+  <li>处理动态内容无须与其他软件模块交互</li>
+  <li>由此nginx可以更专注于静态内容处理，并达到可观的高效率</li>
+</ol>
+
+<h4 id="三配置文件">三、配置文件</h4>
+
+<p><strong>Nginx</strong></p>
+<ol>
+  <li>全局统一配置</li>
+  <li>高效；对比apache失去灵活性，但提升效率，比如多级目录每层目录配置的解析等类似场景</li>
+  <li>安全；对比目录级的配置，用户未必能做到安全性的配置管理</li>
+  <li>动态；通关nginx变量可实现动态变量设置与获取，达到动态配置的效果</li>
+</ol>
+
+<p><strong>Apache</strong></p>
+<ol>
+  <li>目录级别的配置文件 .htaccess</li>
+  <li>配置文件动态加载(每次请求都会重新解析配置)</li>
+  <li>做到目录级别的权限隔离，不同目录对应不同用户</li>
+</ol>
+
+<h4 id="四解析">四、解析</h4>
+
+<p><strong>Nginx</strong></p>
+<ol>
+  <li>基于URI解析</li>
+</ol>
+
+<p><strong>Apache</strong></p>
+<ol>
+  <li>基于文件系统资源的方式解析</li>
+</ol>
+
+<h4 id="五兼容性生态支持文档">五、兼容性、生态、支持、文档</h4>
+
+<p><strong>Nginx</strong></p>
+<ol>
+  <li>相对apache略逊色</li>
+</ol>
+
+<p><strong>Apache</strong></p>
+<ol>
+  <li>无处不在</li>
+</ol>
+
+<h4 id="六搭配使用">六、搭配使用</h4>
+
+<ol>
+  <li>通常用Nginx作为反向代理，Apache作为Web Server；</li>
+  <li>Nginx处理静态内容，Apache处理动态内容。
+<br /><br /><br /></li>
+</ol>
+
+<h2 id="openresty">OpenResty</h2>
+
+<h3 id="简介-1">简介</h3>
+<ol>
+  <li>Free + Open-Source + High-Performance + High-Stability + …</li>
+  <li>WebServer + WebCacheServer + Proxy + LB + …</li>
+  <li>lua-nginx-module + LuaJIT</li>
+  <li>lualib, test framework, debugging tool</li>
+</ol>
+
+<h3 id="高效率基础-1">高效率基础：</h3>
+<ol>
+  <li>
+    <p>Lua and LuaJIT</p>
+  </li>
+  <li>ngx_lua_mode
+    <ul>
+      <li>请求响应的多阶段处理</li>
+      <li>
+        <p>利用协程</p>
+
+        <p>协程是非抢占式的，正在运行的协程只有在显式调用 yield 函数后才会被挂起;因此，同一时间内，只有一个协程在处理（因为 worker 是单线程的）。<br />
+  lua 协程还有一个特性，就是子协程优先运行，只有当子协程都被挂起或运行结束才会继续运行父协程。在balancer_by_lua*, header_filter, body_filter, log阶段中openresty直接在主协程中执行代码，所以这些阶段是需要尽量避免阻塞操作的;<br />
+  而在access，content等其他几个阶段中，会创建一个新的协程去执行此阶段的lua代码。<br />
+  表现在API层面，两者的区别就是能否执行ngx.sleep, ngx.socket, ngx.thread这几个命令。</p>
+      </li>
+    </ul>
+  </li>
+  <li>asynchronous, non-blocking</li>
+</ol>
+
+<h3 id="最佳实践">最佳实践:</h3>
+<ol>
+  <li>
+    <p>api gateway(orange, kong)</p>
+  </li>
+  <li>
+    <p>火焰图(性能分析)</p>
+    <ul>
+      <li>systemtap</li>
+      <li>openresty-systemtap-toolkit</li>
+      <li>FlameGraph</li>
+      <li>wrk</li>
+    </ul>
+  </li>
+</ol>
+
+
+
+  <small>tags: <em>Nginx OpenResty WebServer Proxy</em></small>
+
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>
