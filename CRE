@@ -1,0 +1,246 @@
+# 字符编码
+
+1. ASCII(American Standard Code for Information Interchange)码
+
+定义了0-127共128个字符，包括33个不可见字符(其中多为控制字符)和95个可见字符，而EASCII是其拓展，支持256个字符(0-256)
+
+在各类平台、应用及网络协议中，ASCII码一般以十进制、十六进制表示，少部分用二进制表示
+
+
+2. ML(markup language)编码
+
+SGML(Standard Generalized Markup Language)
+
+是1986出版发布的一个国际标准，定义了平台独立的文本文档格式、索引、链接等语法的机制，用来定义文档的结构和指示文档结构的标签。
+markup，即标记，此处分为两种：
+1. procedard markup，用来描述文档显示的样式。
+2. descriptive markup，用来描述文档中文字的用途。
+所以制定SGML的基本思想就是把文档的`内容`与`样式`分开。
+
+HTML(HyperText Markup Language)
+为适用于Web开发而发展的标记语言，主要是解决数据显示的问题。
+
+XML(eXtensible Markup Language)
+可以看作为SGML的一个子集，主要是解决数据描述与存储的问题，来补充HTML的不足。
+
+Character references
+
+区别于 本地字符编码(native character encodings)，web中的字符也可以以字符引用的形式被编码，主要分为 CER(Character entity reference) 和 NCR(Numeric character reference)
+
+CER，字符实体引用，在HTML中一般称为 命名实体 或 HTML实体。
+NCR，数字字符引用，在HTML中以一个字符的UCS(Universal Character Set)即通用字符集 或 Unicode(UCS 和 Unicode在当前应该是统一成一种协议与规范了) 数字表示形式编码。
+
+基于上述知识铺垫，对于ML编码，主要归类如下：
+
+CER:
+
+格式为&name;
+
+HTML中，一般160-255的扩展ascii码都可通过CER来表示，例如`λ`可表示为&lambda; 
+
+XML中，预定义的CER比较少，只有五个此类编码：
+
+	&amp; → & (ampersand, U+0026)
+	&lt; → < (less-than sign, U+003C)
+	&gt; → > (greater-than sign, U+003E)
+	&quot; → " (quotation mark, U+0022)
+	&apos; → ' (apostrophe, U+0027)
+
+参考：https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
+
+NCR:
+
+HTML与XML差别不大，&#后面可填充0不影响编码结果，但XML中大小写敏感，采用十六进制时必须用小写`x`
+
+十进制，如&#nnnn;
+
+十六进制，如&#xhhhh;
+
+
+3. URL编码
+
+又称百分号编码，常见于HTTP协议请求报文中，一般出现在请求行URL中，也可用于application/x-www-form-urlencoded类型的请求体中
+
+URI中允许的字符分 保留字符 与 未保留字符，对于在特定上下文有特殊含义的保留字符，但此字符又用作其他目的，则该字符必须百分号编码，如uri路径中的 / 若要作为路径内容而不是路径分界符，那则必须编码为%2f
+
+编码规则：
+百分号%作为转义字符，后跟两位待编码字符的ASCII十六进制值，大小写不敏感，对于非ASCII字符，则需转换为UTF-8字节序，每个字节按照上述方式表示。
+
+
+4. Unicode字符集，UTF7编码
+
+Unicode字符集
+
+计算机世界里只认两种状态，即0和1，而想向计算机表达更多的含义或意图，就需要组合0,1；所以，命令需要编码(机器指令)，颜色需要编码(RGB)，文字、字符同样需要编码，在文字、字符这个领域里，最庞大、全面、统一的就是Unicode(统一码，尽管个别观点认为UCS->Universal Character Set可能某些方面更全面些)字符集。
+
+Unicode使用的编码范围从0到0x10ffff，每个bit序列都有对应的字符，包含已定义好的字符编码和用作私人自定义的字符编码，每个bit序列，称为一个`Code Point`
+
+这些`Code Point`，分为17个Plane，即17组；一般Plane0称作Basic Plane，其余的称作Supplementary Plane；
+
+Unicode只是定义了Code Point与字符的对应、映射关系，但没有定义Code Point本身该如何存储。
+所以，对于Unicode的映射与编码，需要另一套规范/机制，总的来说当前有两类方法来解决Unicode的mapping 和 encoding的问题，一类是UTF编码(Unicode Transformation Format encodings)，另一类是UCS编码(Universal Coded Character Set encodings)，这两套不同方法其实也有很多重叠的地方，这里只介绍UTF系列中相对常用的编码及相关细节。
+
+UTF-7
+
+严格来说，UTF-7不算Unicode所定义的字符集之一，只是提供了一种Unicode转化为7bit US-ASCII字符的方式。
+
+简而言之，对于数字字母和9个特定符号，UTF-7不作处理，另一些特殊符号如+号会做一个转义，其余unicode会转化为四字节的表示形式，并进行base64编码(连续的须编码的目标字符，编码后的结果以+号开始-号结束，并且base64中不填充=满足4的整数倍个字节)
+所以可以看出编解码比较繁琐复杂，因此应用并不广泛，而且由于编解码标准不一，存在一些安全问题。
+
+参考资料：
+1. https://en.wikipedia.org/wiki/UTF-7
+2. https://tools.ietf.org/html/rfc2152
+
+这里有一些简单尝试，在linux利用好基础命令，可以对须编解码字符的进行一些处理
+
+utf-7 encode
+
+每个字符都转为4字节的unicode再使用base64对字节序列进行编码
+
+hextext=`echo -n ''|hexdump -e '"%04x"'`;printf '\x'${hextext:0:2}'\x'${hextext:2:4} | base64
+
+ht=`echo -n 'abcdefghijklmnoyprstuvwxyz'|hexdump -e '1/1 "%04x"'`;s='';for((i=0;i<${#ht};i+=2));do s=$s'\x'${ht:i:2};done;printf $s|base64
+
+ht='00a3';s='';for((i=0;i<${#ht};i+=2));do s=$s'\x'${ht:i:2};done;printf $s|base64
+
+utf-7 decode
+
+echo -n 'AKMgIA=='|base64 -d|xxd -ps
+
+UTF-8
+
+使用一到四个字节进行编码，所以是一种可变长度的字符编码，也是一种前缀码，一般实际应用中使用的字符Code Point值都比较小，所以使用UTF-8的编码方式更加简单高效。
+
+编码方法：
+整体而言Unicode的Code Point段在UTF-8体系下被分割为四段，不同段对应不同长度字节数表示，具体对应关系如下：
+
+1. 0x000000 - 0x00007f
+
+0000 0000 0000 0000 0zzz zzzz    ->    0zzz zzzz (00-7f)
+
+2. 0x000080 - 0x0007ff
+
+0000 0000 0000 0yyy yyzz zzzz    ->    110y yyyy (c0-df) 10zz zzzz (80-bf)
+
+3. 0x000800 - 0x00ffff
+
+0000 0000 xxxx yyyy yyzz zzzz    ->    1110 xxxx (e0-ef) 10yy yyyy (80-bf) 10zz zzzz (80-bf)
+
+4. 0x010000 - 0x10ffff
+
+000w wwxx xxxx yyyy yyzz zzzz    ->    1111 0www (f0-f7) 10xx xxxx (80-bf) 10yy yyyy (80-bf) 10zz zzzz (80-bf)
+
+编码识别方法：
+仅需要对任意UTF-8编码的任意字节 B 进行读取判断即可，若
+1. B的第一位为0，则B表示一个ASCII码字符
+2. B的第一位为1，第二位为0，则B为一个多字节字符的其中一个字节(非第一个字节)
+3. B的前两位为1，第三位为0，则B为两个字节表示的字符的第一个字节
+4. B的前三位为1，第四位为0，则B为三个字节表示的字符的第一个字节
+5. B的前四位为1，第五位为0，则B为四个字节表示的字符的第一个字节
+
+UTF-8的编码特性可从上述编码识别方法中看出，这些特性保证了一个字符的字节序列不会包含在另一个字符的字节序列中，这对于以字节为基础的 子串匹配 方法能适用于UTF-8编码的文本中
+
+UTF-16
+
+使用两个字节(16bit)表示Basic Plane(Plane 0)，使用四字节表示Supplementary Plane；
+那么就需要一个机制帮助计算机区分四字节编码到底是表示两个Basic Plane还是表示一个Supplementary Plane的字符；
+Unicode的做法是将Basic Plane的两段Code Point保留，不表示任意字符；其中，0xd800 - 0xdbff表示 High Surrogate(高位代理)，0xdc00 - 0xdfff表示 Low Surrogate(低位代理)，计算机只要发现代理bit位了，就知道对应的字节是表示Supplementary Plane的字符，这里的高位指的是左边第一、二个字节，低位指的三、四个字节；当然，我们也可以把这些两字节的代理看作一种特殊字符来标识Supplementary Plane。
+通过高低位代理的约定，刚好编码范围能覆盖到Supplementary Plane的Code Point范围。
+
+编码方法：
+1. 若Code Point在Basic Plane，直接进行二进制编码，位数不够的左边补充0
+2. 若Code Point在Supplementary Plane，则
+	1. Code Point减去0x10000, 得到一个位于0x000000和0x0ffffff之间的数
+	2. 这个数字转换为20bit值，位数不够则左边补充0, 记为hhhh hhhh hhll llll llll
+	3. 将hhhh hhhh hh取出加上0xd800，得到高位代理
+	4. 将llll llll ll取出加上0xdc00，得到低位代理
+	5. 将高低位代理拼接，得到1101 10hh hhhh hhhh 1101 11ll llll llll即为UTF-16的编码值
+
+解码方法则相反，若解码时高低位代理并不成对存在，这种情况一般不显示该代理字符。
+
+根据UTF-16的编码原理及方法可知
+1. 对于0x00 - 0xff的字符，也浪费了8bit空间(左边的0bit补位)
+2. 对于Supplementary Plane的编解码方法相对复杂一些，计算操作稍多一些
+
+所以实际场景中应用也不是很广泛，存储中文可能较有优势，因为汉字多数在0x000800 - 0x00ffff这一段
+
+UTF-32
+
+使用四个字节(即32bit，UTF-32的32也是由此而来)来表示Code Point，若Code Point bit位不足则在左边填充0；所以，UTF-32的编码方式，空间浪费极大，何况多数用到的字符在Plane 0中，所以对于存储传输都非常低效，实际场景使用很少。
+
+BOM
+
+(byte-order mark)字节顺序标记，是U+feff的统一码字符的名称，当使用UTF-16或UTF-32编码时，用该字符来标示编码使用的字节序(端续->大端， 尾序->小端)；对于UTF-8，使用EF BB BF标记，但仅用于标示它是UTF-8文件。
+
+
+5. BASE编码
+
+算法原理：
+计算机中一般一个字符对应一个字节，一个字节占8 bit位，而Base系列编码，就是把字节切片重组，然后映射成对应的可见ASCII字符。
+
+Base16编码
+
+切分字节，每4bit分为一组(所以原先一字节编码后扩充为两字节)，因此编码使用了2^4=16个字符(0-9a-f)，数据会扩大两倍。
+
+Base32编码
+
+1. 切分字节，每5bit分为一组(而原先一字节8bit，所以取最小公倍数，则此编码需要原先字节序列的40bit即5字节，对应编码后的8字节)如果目标
+2. 字符字节序列最后的bit位不足5位，则在右边补充0bit，同时，Base32编码后的字符需要是8的倍数，因此编码后字符不足8的整数倍时，会在后面补充`=`占位。
+3. Base32编码用到了2^5=32个字符，数据量扩大了约8/5倍(不计0bit填充与=字符填充)。
+4. Base32编码字符序列(0-31)有两种方案，分别为 The Base32 Alphabet 和 The Extended Hex Base32 Alphabet
+
+Base64编码
+
+1. 切分字节，每6bit分为一组(同上取最小公倍数即24bit，所以原文每3字节，对应编码后的4字节)
+2. 对于原字节序列最后bit位不足6位时，在右边补充0bit，同时，编码后字节数不足4的整数倍时，补充`=`
+3. 用到了2^6=64个字符，编码后数据量扩大了约4/3倍(不计0bit填充与=字符填充)。
+4. 同base32，base64编码字符序列(0-63)也有两种方案，分别为 The Base64 Alphabet 和 The URL and Filename safe Base64 Alphabet，主要区别则在于62, 63位的映射由 `+`,`/` 变成 `-`,`_` (后一种常用于URL的Base64编码中，因为+,/也是URL中的特殊字符，如果再多一次urlencode则会导致信息更冗余，不便于控制长度与解码复杂度)而且在Base64解码过程中，对于末尾缺省的`=`填充做好兼容也是必要的。
+另外在一些特定的场景中(比如正则传输等，对于+,/这些特殊符号，也可自定义对应的替换符号以满足自身的业务场景，所以这种情况对于第三方模块做base64解码也会带来些挑战)
+
+
+
+参考：
+1. https://zhuanlan.zhihu.com/p/51316306
+2. https://www.rfc-editor.org/rfc/rfc4648.html
+
+6. Quoted-printable编码
+
+对所有不可打印字符进行编码(=号在这里也需要进行编码，对于原文中起到换行作用的CR 和 LF则无须编码)，编码后的文本每行不得超过76个字符，所以其采用=结尾进行`软换行`，编码规则为=跟上对应字符的16进制；
+所以该编码主要用于ASCII字符为主的文本内容。
+
+7. EScape/Unescape编码
+
+没有找到这里的相关标准，此处应该主要是指Unicode的与对应Code Point的编解码，一般对于ASCII中的数字字母和一些特殊符号，不会进行编解码操作，其余的字符会转换成对应16进制的格式，如果是Basic Plane内的字符,表示形式为%XX，否则表示为%uXXXX的格式
+
+
+8. Unix-to-Unix encoding(Uuencoding)
+
+begin <輸入檔存取模式> <輸入檔名>
+<編碼內容>
+[<編碼內容>]
+[...]
+`
+end
+
+9. binary-to-text encoding(XXencoding)
+
+
+10. 一些用例
+
+<!-- +/v8 +ADw-script+AD4-alert('iron man')+ADsAPA-/script+AD4- -->
++/v8 +ADw-object data="data:text/html;base64,PG9iamVjdCBkYXRhPSJkYXRhOnRleHQvaHRtbDtiYXNlNjQsUEhOamNtbHdkRDVoYkdWeWRDZ25lSE56SnlrOEwzTmpjbWx3ZEQ0PSI+-"+AD4-
+&#x1F466;&zwj;&#x1F466;&#x1F466;👨‍👩‍👦
+&abc;
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+
+<%ab<object data="data:text/html;base64,PG9iamVjdCBkYXRhPSJkYXRhOnRleHQvaHRtbDtiYXNlNjQsUEhOamNtbHdkRDVoYkdWeWRDZ25lSE56SnlrOEwzTmpjbWx3ZEQ0PSI+">
+<source src="https://www.w3schools.com"></source>
+</body>
+</html>
+
+?a=1' or 1+'
